@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+streamlit
+pydantic
+python-dotenv
+pytest
+requests
+pandas
+numpy
+chromadb
+langchain
+langchain-community
