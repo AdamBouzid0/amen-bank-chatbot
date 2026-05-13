@@ -10,3 +10,4 @@ numpy
 chromadb
 langchain
 langchain-community
+httpx
