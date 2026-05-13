@@ -1,0 +1,164 @@
+[
+  {
+    "transaction_id": "TX001",
+    "account_id": "ACC001",
+    "date": "2026-05-12",
+    "label": "Virement reçu - Client Gamma",
+    "amount": 1200.000,
+    "direction": "credit",
+    "category": "Encaissements clients"
+  },
+  {
+    "transaction_id": "TX002",
+    "account_id": "ACC001",
+    "date": "2026-05-11",
+    "label": "Paiement fournisseur - Société ABC",
+    "amount": -500.000,
+    "direction": "debit",
+    "category": "Fournisseurs"
+  },
+  {
+    "transaction_id": "TX003",
+    "account_id": "ACC001",
+    "date": "2026-05-10",
+    "label": "Paiement TPE - Recette journalière",
+    "amount": 780.500,
+    "direction": "credit",
+    "category": "Encaissements TPE"
+  },
+  {
+    "transaction_id": "TX004",
+    "account_id": "ACC001",
+    "date": "2026-05-09",
+    "label": "Frais bancaires",
+    "amount": -18.750,
+    "direction": "debit",
+    "category": "Frais bancaires"
+  },
+  {
+    "transaction_id": "TX005",
+    "account_id": "ACC001",
+    "date": "2026-05-08",
+    "label": "Virement salaire employés",
+    "amount": -1450.000,
+    "direction": "debit",
+    "category": "Salaires"
+  },
+  {
+    "transaction_id": "TX006",
+    "account_id": "ACC001",
+    "date": "2026-05-07",
+    "label": "Paiement fournisseur - Transport Nord",
+    "amount": -320.000,
+    "direction": "debit",
+    "category": "Transport"
+  },
+  {
+    "transaction_id": "TX007",
+    "account_id": "ACC001",
+    "date": "2026-05-06",
+    "label": "Virement reçu - Client Delta",
+    "amount": 950.000,
+    "direction": "credit",
+    "category": "Encaissements clients"
+  },
+  {
+    "transaction_id": "TX008",
+    "account_id": "ACC001",
+    "date": "2026-05-05",
+    "label": "Achat fournitures bureau",
+    "amount": -125.400,
+    "direction": "debit",
+    "category": "Fournitures"
+  },
+  {
+    "transaction_id": "TX009",
+    "account_id": "ACC001",
+    "date": "2026-05-04",
+    "label": "Paiement facture internet",
+    "amount": -89.900,
+    "direction": "debit",
+    "category": "Télécommunications"
+  },
+  {
+    "transaction_id": "TX010",
+    "account_id": "ACC001",
+    "date": "2026-05-03",
+    "label": "Dépôt espèces",
+    "amount": 600.000,
+    "direction": "credit",
+    "category": "Dépôts"
+  },
+  {
+    "transaction_id": "TX011",
+    "account_id": "ACC002",
+    "date": "2026-05-02",
+    "label": "Versement compte épargne",
+    "amount": 2000.000,
+    "direction": "credit",
+    "category": "Épargne"
+  },
+  {
+    "transaction_id": "TX012",
+    "account_id": "ACC002",
+    "date": "2026-04-25",
+    "label": "Transfert vers compte courant",
+    "amount": -1000.000,
+    "direction": "debit",
+    "category": "Transfert interne"
+  },
+  {
+    "transaction_id": "TX013",
+    "account_id": "ACC003",
+    "date": "2026-05-01",
+    "label": "Virement reçu international",
+    "amount": 1500.000,
+    "direction": "credit",
+    "category": "International"
+  },
+  {
+    "transaction_id": "TX014",
+    "account_id": "ACC003",
+    "date": "2026-04-28",
+    "label": "Frais transfert international",
+    "amount": -25.000,
+    "direction": "debit",
+    "category": "Frais bancaires"
+  },
+  {
+    "transaction_id": "TX015",
+    "account_id": "ACC004",
+    "date": "2026-05-12",
+    "label": "Virement reçu - Salaire",
+    "amount": 1300.000,
+    "direction": "credit",
+    "category": "Revenus"
+  },
+  {
+    "transaction_id": "TX016",
+    "account_id": "ACC004",
+    "date": "2026-05-11",
+    "label": "Paiement carte - Supermarché",
+    "amount": -86.300,
+    "direction": "debit",
+    "category": "Alimentation"
+  },
+  {
+    "transaction_id": "TX017",
+    "account_id": "ACC004",
+    "date": "2026-05-10",
+    "label": "Retrait DAB",
+    "amount": -200.000,
+    "direction": "debit",
+    "category": "Retrait"
+  },
+  {
+    "transaction_id": "TX018",
+    "account_id": "ACC004",
+    "date": "2026-05-09",
+    "label": "Paiement facture électricité",
+    "amount": -120.500,
+    "direction": "debit",
+    "category": "Factures"
+  }
+]

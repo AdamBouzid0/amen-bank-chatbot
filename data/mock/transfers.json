@@ -1,0 +1,50 @@
+[
+  {
+    "transfer_id": "TR001",
+    "client_id": "C001",
+    "type": "account_to_account",
+    "from_account_id": "ACC001",
+    "to_account_id": "ACC002",
+    "amount": 1000.000,
+    "currency": "TND",
+    "reason": "Alimentation compte épargne",
+    "execution_date": "2026-05-12",
+    "status": "executed"
+  },
+  {
+    "transfer_id": "TR002",
+    "client_id": "C001",
+    "type": "beneficiary_transfer",
+    "from_account_id": "ACC001",
+    "beneficiary_id": "BEN001",
+    "amount": 500.000,
+    "currency": "TND",
+    "reason": "Facture fournitures mai",
+    "execution_date": "2026-05-11",
+    "status": "executed"
+  },
+  {
+    "transfer_id": "TR003",
+    "client_id": "C001",
+    "type": "beneficiary_transfer",
+    "from_account_id": "ACC001",
+    "beneficiary_id": "BEN002",
+    "amount": 320.000,
+    "currency": "TND",
+    "reason": "Transport marchandises",
+    "execution_date": "2026-05-07",
+    "status": "executed"
+  },
+  {
+    "transfer_id": "TR004",
+    "client_id": "C001",
+    "type": "beneficiary_transfer",
+    "from_account_id": "ACC001",
+    "beneficiary_id": "BEN003",
+    "amount": 750.000,
+    "currency": "TND",
+    "reason": "Honoraires comptables",
+    "execution_date": "2026-05-15",
+    "status": "scheduled"
+  }
+]

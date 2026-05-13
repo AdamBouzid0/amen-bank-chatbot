@@ -1,0 +1,32 @@
+[
+  {
+    "message_id": "MSG001",
+    "client_id": "C001",
+    "recipient_type": "agency",
+    "recipient": "Agence Tunis Centre",
+    "subject": "Demande d'information sur chéquier",
+    "body": "Bonjour, je souhaite avoir des informations sur l'état de ma demande de chéquier. Merci.",
+    "created_at": "2026-05-10T10:20:00",
+    "status": "sent"
+  },
+  {
+    "message_id": "MSG002",
+    "client_id": "C001",
+    "recipient_type": "support",
+    "recipient": "Support AMENet",
+    "subject": "Problème de connexion",
+    "body": "Bonjour, je rencontre un problème de connexion à AMENet depuis le navigateur Chrome. La page reste bloquée au chargement.",
+    "created_at": "2026-05-09T16:45:00",
+    "status": "sent"
+  },
+  {
+    "message_id": "MSG003",
+    "client_id": "C002",
+    "recipient_type": "agency",
+    "recipient": "Agence La Marsa",
+    "subject": "Demande de relevé",
+    "body": "Bonjour, je souhaite recevoir mon relevé de compte du mois d'avril 2026.",
+    "created_at": "2026-05-08T12:00:00",
+    "status": "draft"
+  }
+]

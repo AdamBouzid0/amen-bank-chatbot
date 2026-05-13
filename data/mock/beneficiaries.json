@@ -1,0 +1,42 @@
+[
+  {
+    "beneficiary_id": "BEN001",
+    "client_id": "C001",
+    "name": "Société ABC Fournitures",
+    "bank": "AMEN BANK",
+    "masked_account_number": "**** **** **** 1001",
+    "type": "fournisseur",
+    "currency": "TND",
+    "status": "active"
+  },
+  {
+    "beneficiary_id": "BEN002",
+    "client_id": "C001",
+    "name": "Entreprise Transport Nord",
+    "bank": "BIAT",
+    "masked_account_number": "**** **** **** 2002",
+    "type": "fournisseur",
+    "currency": "TND",
+    "status": "active"
+  },
+  {
+    "beneficiary_id": "BEN003",
+    "client_id": "C001",
+    "name": "Cabinet Comptable Conseil",
+    "bank": "Attijari Bank",
+    "masked_account_number": "**** **** **** 3003",
+    "type": "prestataire",
+    "currency": "TND",
+    "status": "active"
+  },
+  {
+    "beneficiary_id": "BEN004",
+    "client_id": "C002",
+    "name": "Anis Ben Salah",
+    "bank": "AMEN BANK",
+    "masked_account_number": "**** **** **** 4004",
+    "type": "particulier",
+    "currency": "TND",
+    "status": "active"
+  }
+]

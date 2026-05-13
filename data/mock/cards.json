@@ -1,0 +1,42 @@
+[
+  {
+    "card_id": "CARD001",
+    "client_id": "C001",
+    "account_id": "ACC001",
+    "masked_card_number": "**** **** **** 4582",
+    "card_type": "Carte Business Nationale",
+    "status": "active",
+    "currency": "TND",
+    "monthly_limit": 3000.000
+  },
+  {
+    "card_id": "CARD002",
+    "client_id": "C001",
+    "account_id": "ACC001",
+    "masked_card_number": "**** **** **** 9014",
+    "card_type": "Carte Prépayée",
+    "status": "active",
+    "currency": "TND",
+    "monthly_limit": 1000.000
+  },
+  {
+    "card_id": "CARD003",
+    "client_id": "C001",
+    "account_id": "ACC003",
+    "masked_card_number": "**** **** **** 7788",
+    "card_type": "Carte Internationale",
+    "status": "blocked_international",
+    "currency": "EUR",
+    "monthly_limit": 2500.000
+  },
+  {
+    "card_id": "CARD004",
+    "client_id": "C002",
+    "account_id": "ACC004",
+    "masked_card_number": "**** **** **** 6633",
+    "card_type": "Carte Classique",
+    "status": "active",
+    "currency": "TND",
+    "monthly_limit": 1500.000
+  }
+]

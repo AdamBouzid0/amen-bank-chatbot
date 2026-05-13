@@ -1,0 +1,22 @@
+[
+  {
+    "client_id": "C001",
+    "name": "Société Démo SARL",
+    "client_type": "entreprise",
+    "agency": "Agence Tunis Centre",
+    "subscriber_number": "ABN-0001",
+    "email": "contact@societe-demo.tn",
+    "phone": "+216 71 000 001",
+    "status": "active"
+  },
+  {
+    "client_id": "C002",
+    "name": "Client Particulier Démo",
+    "client_type": "particulier",
+    "agency": "Agence La Marsa",
+    "subscriber_number": "ABN-0002",
+    "email": "client.demo@example.com",
+    "phone": "+216 71 000 002",
+    "status": "active"
+  }
+]

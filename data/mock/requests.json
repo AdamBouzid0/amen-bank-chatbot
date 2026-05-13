@@ -1,0 +1,37 @@
+[
+  {
+    "request_id": "REQ001",
+    "client_id": "C001",
+    "type": "checkbook_request",
+    "status": "pending",
+    "created_at": "2026-05-10T09:30:00",
+    "details": {
+      "account_id": "ACC001",
+      "checkbook_type": "25 chèques",
+      "agency": "Agence Tunis Centre"
+    }
+  },
+  {
+    "request_id": "REQ002",
+    "client_id": "C001",
+    "type": "document_request",
+    "status": "completed",
+    "created_at": "2026-05-08T14:15:00",
+    "details": {
+      "account_id": "ACC001",
+      "document_type": "Relevé de compte",
+      "period": "Avril 2026"
+    }
+  },
+  {
+    "request_id": "REQ003",
+    "client_id": "C002",
+    "type": "card_request",
+    "status": "pending",
+    "created_at": "2026-05-09T11:00:00",
+    "details": {
+      "account_id": "ACC004",
+      "card_type": "Carte Classique"
+    }
+  }
+]

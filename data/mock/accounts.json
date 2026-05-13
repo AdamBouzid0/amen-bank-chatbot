@@ -1,0 +1,42 @@
+[
+  {
+    "account_id": "ACC001",
+    "client_id": "C001",
+    "masked_account_number": "**** **** **** 3456",
+    "label": "Compte courant entreprise",
+    "currency": "TND",
+    "balance": 3250.750,
+    "balance_date": "2026-05-12",
+    "status": "active"
+  },
+  {
+    "account_id": "ACC002",
+    "client_id": "C001",
+    "masked_account_number": "**** **** **** 7890",
+    "label": "Compte épargne entreprise",
+    "currency": "TND",
+    "balance": 18500.000,
+    "balance_date": "2026-05-12",
+    "status": "active"
+  },
+  {
+    "account_id": "ACC003",
+    "client_id": "C001",
+    "masked_account_number": "**** **** **** 1122",
+    "label": "Compte devise EUR",
+    "currency": "EUR",
+    "balance": 4200.500,
+    "balance_date": "2026-05-12",
+    "status": "active"
+  },
+  {
+    "account_id": "ACC004",
+    "client_id": "C002",
+    "masked_account_number": "**** **** **** 5566",
+    "label": "Compte courant particulier",
+    "currency": "TND",
+    "balance": 1420.300,
+    "balance_date": "2026-05-12",
+    "status": "active"
+  }
+]
