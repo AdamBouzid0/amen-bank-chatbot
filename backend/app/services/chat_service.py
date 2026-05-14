@@ -1,3 +1,4 @@
+import unicodedata
 from typing import Any
 
 from backend.app.services.intent_service import IntentService
@@ -10,13 +11,42 @@ class ChatService:
 
     Il reçoit un message utilisateur, détecte l'intention,
     appelle le service adapté et retourne une réponse structurée.
+
+    Cette version gère aussi les actions en attente de confirmation.
     """
 
-    def __init__(self):
-        self.intent_service = IntentService()
-        self.banking_service = MockBankingService()
+    def __init__(
+        self,
+        intent_service: IntentService | None = None,
+        banking_service: MockBankingService | None = None,
+    ):
+        self.intent_service = intent_service or IntentService()
+        self.banking_service = banking_service or MockBankingService()
+        self.pending_actions: dict[str, dict[str, Any]] = {}
 
     def handle_message(self, message: str, client_id: str = "C001") -> dict[str, Any]:
+        normalized_message = self._normalize(message)
+
+        if client_id in self.pending_actions:
+            if self._is_confirmation(normalized_message):
+                return self._confirm_pending_action(client_id)
+
+            if self._is_cancellation(normalized_message):
+                return self._cancel_pending_action(client_id)
+
+            return {
+                "message": (
+                    "Une action est en attente de confirmation. "
+                    "Répondez par 'oui' pour confirmer ou 'non' pour annuler."
+                ),
+                "intent": "pending_confirmation",
+                "requires_confirmation": True,
+                "pending_action": self.pending_actions[client_id],
+                "data": {},
+                "sources": [],
+                "error": None,
+            }
+
         intent_result = self.intent_service.detect_intent(message)
         intent = intent_result.intent
         entities = intent_result.entities
@@ -63,6 +93,166 @@ class ChatService:
                 "sources": [],
                 "error": str(error),
             }
+
+    def _normalize(self, text: str) -> str:
+        text = text.lower().strip()
+        text = unicodedata.normalize("NFD", text)
+        return "".join(char for char in text if unicodedata.category(char) != "Mn")
+
+    def _is_confirmation(self, text: str) -> bool:
+        confirmations = {
+            "oui",
+            "yes",
+            "ok",
+            "d'accord",
+            "daccord",
+            "je confirme",
+            "confirmer",
+            "confirme",
+            "valider",
+            "valide",
+        }
+        return text in confirmations
+
+    def _is_cancellation(self, text: str) -> bool:
+        cancellations = {
+            "non",
+            "no",
+            "annuler",
+            "annule",
+            "stop",
+            "abandonner",
+            "abandonne",
+        }
+        return text in cancellations
+
+    def _store_pending_action(
+        self,
+        client_id: str,
+        message: str,
+        intent: str,
+        pending_action: dict[str, Any],
+        data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        self.pending_actions[client_id] = pending_action
+
+        return {
+            "message": message,
+            "intent": intent,
+            "requires_confirmation": True,
+            "pending_action": pending_action,
+            "data": data or {},
+            "sources": [],
+            "error": None,
+        }
+
+    def _confirm_pending_action(self, client_id: str) -> dict[str, Any]:
+        pending_action = self.pending_actions.pop(client_id)
+
+        try:
+            action_type = pending_action["type"]
+
+            if action_type == "transfer":
+                result = self.banking_service.prepare_transfer(
+                    client_id=pending_action["client_id"],
+                    from_account_id=pending_action["from_account_id"],
+                    amount=pending_action["amount"],
+                    currency=pending_action["currency"],
+                    reason=pending_action["reason"],
+                    to_account_id=pending_action.get("to_account_id"),
+                    beneficiary_id=pending_action.get("beneficiary_id"),
+                    execution_date=pending_action.get("execution_date"),
+                    status="confirmed_simulation",
+                )
+
+                return {
+                    "message": "Le virement a été confirmé et enregistré dans l'environnement de simulation.",
+                    "intent": "confirm_action",
+                    "requires_confirmation": False,
+                    "data": result,
+                    "sources": [],
+                    "error": None,
+                }
+
+            if action_type == "block_card":
+                result = self.banking_service.block_card(
+                    client_id=pending_action["client_id"],
+                    card_id=pending_action["card_id"],
+                    reason=pending_action["reason"],
+                )
+
+                return {
+                    "message": "L'opposition sur carte a été confirmée et enregistrée dans l'environnement de simulation.",
+                    "intent": "confirm_action",
+                    "requires_confirmation": False,
+                    "data": result,
+                    "sources": [],
+                    "error": None,
+                }
+
+            if action_type == "request_checkbook":
+                result = self.banking_service.request_checkbook(
+                    client_id=pending_action["client_id"],
+                    account_id=pending_action["account_id"],
+                    checkbook_type=pending_action["checkbook_type"],
+                )
+
+                return {
+                    "message": "La demande de chéquier a été confirmée et enregistrée dans l'environnement de simulation.",
+                    "intent": "confirm_action",
+                    "requires_confirmation": False,
+                    "data": result,
+                    "sources": [],
+                    "error": None,
+                }
+
+            if action_type == "request_document":
+                result = self.banking_service.request_document(
+                    client_id=pending_action["client_id"],
+                    account_id=pending_action["account_id"],
+                    document_type=pending_action["document_type"],
+                    period=pending_action.get("period"),
+                )
+
+                return {
+                    "message": "La demande de document a été confirmée et enregistrée dans l'environnement de simulation.",
+                    "intent": "confirm_action",
+                    "requires_confirmation": False,
+                    "data": result,
+                    "sources": [],
+                    "error": None,
+                }
+
+            return {
+                "message": "Action inconnue. La confirmation n'a pas pu être traitée.",
+                "intent": "confirm_action",
+                "requires_confirmation": False,
+                "data": {},
+                "sources": [],
+                "error": "unknown_action",
+            }
+
+        except ValueError as error:
+            return {
+                "message": str(error),
+                "intent": "confirm_action",
+                "requires_confirmation": False,
+                "data": {},
+                "sources": [],
+                "error": str(error),
+            }
+
+    def _cancel_pending_action(self, client_id: str) -> dict[str, Any]:
+        self.pending_actions.pop(client_id)
+
+        return {
+            "message": "L'action en attente a été annulée.",
+            "intent": "cancel_action",
+            "requires_confirmation": False,
+            "data": {},
+            "sources": [],
+            "error": None,
+        }
 
     def _get_default_account(self, client_id: str) -> dict[str, Any]:
         accounts = self.banking_service.get_accounts_by_client(client_id)
@@ -154,21 +344,19 @@ class ChatService:
 
         target = beneficiary["name"] if beneficiary else "un bénéficiaire à préciser"
 
-        return {
-            "message": (
-                f"Je peux préparer un virement de {amount:.3f} TND depuis "
-                f"{account['label']} vers {target}. Confirmez-vous cette opération ?"
-            ),
-            "intent": intent,
-            "requires_confirmation": True,
-            "pending_action": pending_action,
-            "data": {
+        return self._store_pending_action(
+            client_id=client_id,
+            intent=intent,
+            pending_action=pending_action,
+            data={
                 "account": account,
                 "beneficiary": beneficiary,
             },
-            "sources": [],
-            "error": None,
-        }
+            message=(
+                f"Je peux préparer un virement de {amount:.3f} TND depuis "
+                f"{account['label']} vers {target}. Confirmez-vous cette opération ?"
+            ),
+        )
 
     def _handle_block_card(self, client_id: str, intent: str, entities: dict[str, Any]) -> dict[str, Any]:
         cards = self.banking_service.get_cards_by_client(client_id)
@@ -191,67 +379,61 @@ class ChatService:
             "reason": "Demande d'opposition depuis le chatbot",
         }
 
-        return {
-            "message": (
+        return self._store_pending_action(
+            client_id=client_id,
+            intent=intent,
+            pending_action=pending_action,
+            data={
+                "card": selected_card,
+            },
+            message=(
                 f"Vous souhaitez faire opposition sur la carte "
                 f"{selected_card['masked_card_number']}. Confirmez-vous cette opération ?"
             ),
-            "intent": intent,
-            "requires_confirmation": True,
-            "pending_action": pending_action,
-            "data": {
-                "card": selected_card,
-            },
-            "sources": [],
-            "error": None,
-        }
+        )
 
     def _handle_request_checkbook(self, client_id: str, intent: str, entities: dict[str, Any]) -> dict[str, Any]:
         account = self._get_default_account(client_id)
 
-        return {
-            "message": (
-                f"Je peux préparer une demande de chéquier pour le compte "
-                f"{account['masked_account_number']}. Confirmez-vous la demande ?"
-            ),
-            "intent": intent,
-            "requires_confirmation": True,
-            "pending_action": {
+        return self._store_pending_action(
+            client_id=client_id,
+            intent=intent,
+            pending_action={
                 "type": "request_checkbook",
                 "client_id": client_id,
                 "account_id": account["account_id"],
                 "checkbook_type": "25 chèques",
             },
-            "data": {
+            data={
                 "account": account,
             },
-            "sources": [],
-            "error": None,
-        }
+            message=(
+                f"Je peux préparer une demande de chéquier pour le compte "
+                f"{account['masked_account_number']}. Confirmez-vous la demande ?"
+            ),
+        )
 
     def _handle_request_document(self, client_id: str, intent: str, entities: dict[str, Any]) -> dict[str, Any]:
         account = self._get_default_account(client_id)
 
-        return {
-            "message": (
-                f"Je peux préparer une demande de relevé de compte pour "
-                f"{account['masked_account_number']}. Confirmez-vous la demande ?"
-            ),
-            "intent": intent,
-            "requires_confirmation": True,
-            "pending_action": {
+        return self._store_pending_action(
+            client_id=client_id,
+            intent=intent,
+            pending_action={
                 "type": "request_document",
                 "client_id": client_id,
                 "account_id": account["account_id"],
                 "document_type": "Relevé de compte",
                 "period": "Mois courant",
             },
-            "data": {
+            data={
                 "account": account,
             },
-            "sources": [],
-            "error": None,
-        }
+            message=(
+                f"Je peux préparer une demande de relevé de compte pour "
+                f"{account['masked_account_number']}. Confirmez-vous la demande ?"
+            ),
+        )
 
     def _handle_simulate_credit(self, intent: str, entities: dict[str, Any]) -> dict[str, Any]:
         amount = entities.get("amount", 20000.0)

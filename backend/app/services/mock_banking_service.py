@@ -170,6 +170,7 @@ class MockBankingService:
         to_account_id: str | None = None,
         beneficiary_id: str | None = None,
         execution_date: str | None = None,
+        status: str = "pending_confirmation",
     ) -> dict[str, Any]:
         self.get_client(client_id)
         from_account = self.get_account(from_account_id)
@@ -206,7 +207,7 @@ class MockBankingService:
             "currency": currency,
             "reason": reason,
             "execution_date": execution_date or date.today().isoformat(),
-            "status": "pending_confirmation",
+            "status": status,
             "created_at": datetime.now().isoformat(timespec="seconds"),
         }
 
