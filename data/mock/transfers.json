@@ -60,5 +60,19 @@
     "execution_date": "2026-05-14",
     "status": "confirmed_simulation",
     "created_at": "2026-05-14T10:49:34"
+  },
+  {
+    "transfer_id": "TR006",
+    "client_id": "C001",
+    "type": "beneficiary_transfer",
+    "from_account_id": "ACC001",
+    "to_account_id": null,
+    "beneficiary_id": "BEN001",
+    "amount": 500.0,
+    "currency": "TND",
+    "reason": "Virement préparé depuis le chatbot",
+    "execution_date": "2026-05-14",
+    "status": "confirmed_simulation",
+    "created_at": "2026-05-14T10:56:12"
   }
 ]
