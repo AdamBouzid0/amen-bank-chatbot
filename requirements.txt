@@ -11,3 +11,5 @@ chromadb
 langchain
 langchain-community
 httpx
+pymupdf
+sentence-transformers

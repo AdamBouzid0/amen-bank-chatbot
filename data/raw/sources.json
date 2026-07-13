@@ -1,0 +1,44 @@
+[
+  {
+    "id": "amen_bank_2025",
+    "filename": "amen_bank_2025.pdf",
+    "source_type": "pdf",
+    "title": "Document de référence AMEN BANK 2025",
+    "organization": "AMEN BANK",
+    "year": 2025,
+    "language": "fr",
+    "scope": [
+      "institutional",
+      "digitalisation",
+      "amenet",
+      "security"
+    ],
+    "enabled": true
+  },
+  {
+    "id": "rapport_durabilite_2024",
+    "filename": "rapport_durabilite_2024.pdf",
+    "source_type": "pdf",
+    "title": "Rapport de durabilité AMEN BANK 2024",
+    "organization": "AMEN BANK",
+    "year": 2024,
+    "language": "fr",
+    "scope": [
+      "sustainability",
+      "digitalisation",
+      "security"
+    ],
+    "enabled": true
+  },
+  {
+    "id": "amenet_observations",
+    "filename": "docs/analyse_amenet.md",
+    "source_type": "markdown_analysis",
+    "title": "Analyse fonctionnelle de la démo AMENet",
+    "language": "fr",
+    "scope": [
+      "amenet_help"
+    ],
+    "enabled": true
+  }
+]
