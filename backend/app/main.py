@@ -3,11 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.api.banking_routes import router as banking_router
 from backend.app.api.chat_routes import router as chat_router
+from backend.app.api.rag_routes import router as rag_router
 
 app = FastAPI(
     title="AMENet Chatbot Mock Banking API",
     description="API bancaire simulée pour le prototype de chatbot assistant bancaire.",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 app.add_middleware(
@@ -20,6 +21,7 @@ app.add_middleware(
 
 app.include_router(banking_router)
 app.include_router(chat_router)
+app.include_router(rag_router)
 
 
 @app.get("/")
