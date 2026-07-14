@@ -1,6 +1,7 @@
 import unicodedata
 from typing import Any
 
+from backend.app.rag.rag_service import RagService
 from backend.app.services.intent_service import IntentService
 from backend.app.services.mock_banking_service import MockBankingService
 
@@ -19,9 +20,11 @@ class ChatService:
         self,
         intent_service: IntentService | None = None,
         banking_service: MockBankingService | None = None,
+        rag_service: RagService | None = None,
     ):
         self.intent_service = intent_service or IntentService()
         self.banking_service = banking_service or MockBankingService()
+        self.rag_service = rag_service or RagService()
         self.pending_actions: dict[str, dict[str, Any]] = {}
 
     def handle_message(self, message: str, client_id: str = "C001") -> dict[str, Any]:
@@ -50,6 +53,9 @@ class ChatService:
         intent_result = self.intent_service.detect_intent(message)
         intent = intent_result.intent
         entities = intent_result.entities
+
+        if self._should_answer_with_rag(normalized_message, intent):
+            return self._handle_general_question("general_question", message)
 
         try:
             if intent == "get_balance":
@@ -82,7 +88,7 @@ class ChatService:
             if intent == "out_of_scope":
                 return self._handle_out_of_scope(intent)
 
-            return self._handle_general_question(intent)
+            return self._handle_general_question(intent, message)
 
         except ValueError as error:
             return {
@@ -125,6 +131,51 @@ class ChatService:
             "abandonne",
         }
         return text in cancellations
+
+    def _should_answer_with_rag(self, normalized_message: str, intent: str) -> bool:
+        action_intents = {
+            "prepare_transfer",
+            "block_card",
+            "request_checkbook",
+            "request_document",
+        }
+
+        if intent == "general_question":
+            return True
+
+        if intent in action_intents and self._is_information_question(normalized_message):
+            return True
+
+        return False
+
+    def _is_information_question(self, normalized_message: str) -> bool:
+        information_patterns = (
+            "comment ",
+            "comment faire",
+            "comment demander",
+            "comment commander",
+            "comment bloquer",
+            "comment debloquer",
+            "comment consulter",
+            "qu'est ce",
+            "qu est ce",
+            "c'est quoi",
+            "c est quoi",
+            "explique",
+            "expliquez",
+            "quelle est la procedure",
+            "quelle procedure",
+            "que dois je",
+            "que faut il",
+        )
+
+        return (
+            normalized_message.endswith("?")
+            or any(
+                normalized_message.startswith(pattern)
+                for pattern in information_patterns
+            )
+        )
 
     def _store_pending_action(
         self,
@@ -488,20 +539,113 @@ class ChatService:
             "error": None,
         }
 
-    def _handle_general_question(self, intent: str) -> dict[str, Any]:
+    def _handle_general_question(self, intent: str, original_message: str) -> dict[str, Any]:
+        try:
+            results = self.rag_service.search_documents(
+                query=original_message,
+                top_k=3,
+            )
+        except Exception as error:
+            return self._fallback_general_question(
+                intent=intent,
+                error=str(error),
+            )
+
+        relevant_results = [
+            result
+            for result in results
+            if result.score is None or result.score >= 0.45
+        ]
+
+        if not relevant_results:
+            return self._fallback_general_question(intent=intent)
+
         return {
-            "message": (
-                "Je peux vous aider sur les fonctionnalités AMENet comme la consultation du solde, "
-                "les mouvements, les virements, l'opposition carte, les demandes de documents, "
-                "la simulation de crédit et la messagerie. "
-                "Le module documentaire RAG sera ajouté dans une prochaine version."
-            ),
+            "message": self._build_rag_message(relevant_results),
+            "intent": intent,
+            "requires_confirmation": False,
+            "data": {
+                "rag_results_count": len(relevant_results),
+            },
+            "sources": [
+                self._format_rag_source(result)
+                for result in relevant_results
+            ],
+            "error": None,
+        }
+
+    def _fallback_general_question(
+        self,
+        intent: str,
+        error: str | None = None,
+    ) -> dict[str, Any]:
+        message = (
+            "Je peux vous aider sur les fonctionnalités AMENet comme la consultation du solde, "
+            "les mouvements, les virements, l'opposition carte, les demandes de documents, "
+            "la simulation de crédit et la messagerie."
+        )
+
+        if error:
+            message += (
+                "\n\nLe module documentaire RAG est temporairement indisponible. "
+                "Vérifiez que l'index a bien été construit avec scripts/build_rag_index.py."
+            )
+
+        return {
+            "message": message,
             "intent": intent,
             "requires_confirmation": False,
             "data": {},
             "sources": [],
-            "error": None,
+            "error": error,
         }
+
+    def _build_rag_message(self, results: list[Any]) -> str:
+        lines = [
+            "Voici les informations trouvées dans la base documentaire :"
+        ]
+
+        for index, result in enumerate(results, start=1):
+            excerpt = self._truncate_text(result.text, max_length=900)
+            lines.append(
+                f"\n{index}. **{result.title}**\n{excerpt}"
+            )
+
+        lines.append("\nSources :")
+
+        for result in results:
+            source = result.source_file
+
+            if result.page is not None:
+                source = f"{source}, page {result.page}"
+
+            if result.source_image:
+                source = f"{source} ; capture : {result.source_image}"
+
+            lines.append(f"- {result.title} — {source}")
+
+        return "\n".join(lines)
+
+    def _format_rag_source(self, result: Any) -> dict[str, Any]:
+        return {
+            "title": result.title,
+            "source_type": result.source_type,
+            "source_file": result.source_file,
+            "source_image": result.source_image,
+            "page": result.page,
+            "domain": result.domain,
+            "tags": result.tags,
+            "score": result.score,
+        }
+
+    def _truncate_text(self, text: str, max_length: int = 900) -> str:
+        clean_text = text.strip()
+
+        if len(clean_text) <= max_length:
+            return clean_text
+
+        truncated = clean_text[:max_length].rsplit(" ", 1)[0]
+        return f"{truncated}..."
 
     def _handle_out_of_scope(self, intent: str) -> dict[str, Any]:
         return {
