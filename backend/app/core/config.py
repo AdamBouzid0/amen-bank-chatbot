@@ -1,8 +1,10 @@
 from pathlib import Path
 import os
+from dotenv import load_dotenv
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
+load_dotenv(PROJECT_ROOT / ".env")
 
 # Mock banking data
 DATA_MOCK_DIR = PROJECT_ROOT / "data" / "mock"
@@ -30,3 +32,11 @@ RAG_TOP_K = int(os.getenv("RAG_TOP_K", "4"))
 RAG_EMBEDDING_BATCH_SIZE = int(
     os.getenv("RAG_EMBEDDING_BATCH_SIZE", "32")
 )
+
+
+# Local LLM generation with Ollama
+OLLAMA_ENABLED = os.getenv("OLLAMA_ENABLED", "false").lower() in {"1", "true", "yes", "on"}
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:3b")
+OLLAMA_TIMEOUT_SECONDS = int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "90"))
+OLLAMA_MAX_CONTEXT_CHARS = int(os.getenv("OLLAMA_MAX_CONTEXT_CHARS", "6000"))

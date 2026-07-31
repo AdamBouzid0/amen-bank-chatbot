@@ -1,6 +1,7 @@
 import unicodedata
 from typing import Any
 
+from backend.app.rag.ollama_answerer import OllamaAnswerer
 from backend.app.rag.rag_service import RagService
 from backend.app.services.intent_service import IntentService
 from backend.app.services.mock_banking_service import MockBankingService
@@ -21,10 +22,12 @@ class ChatService:
         intent_service: IntentService | None = None,
         banking_service: MockBankingService | None = None,
         rag_service: RagService | None = None,
+        ollama_answerer: OllamaAnswerer | None = None,
     ):
         self.intent_service = intent_service or IntentService()
         self.banking_service = banking_service or MockBankingService()
         self.rag_service = rag_service or RagService()
+        self.ollama_answerer = ollama_answerer or OllamaAnswerer()
         self.pending_actions: dict[str, dict[str, Any]] = {}
 
     def handle_message(self, message: str, client_id: str = "C001") -> dict[str, Any]:
@@ -54,7 +57,17 @@ class ChatService:
         intent = intent_result.intent
         entities = intent_result.entities
 
+        inferred_action_intent = self._infer_action_intent_from_message(
+            normalized_message
+        )
+
+        if intent == "general_question" and inferred_action_intent:
+            intent = inferred_action_intent
+
         if self._should_answer_with_rag(normalized_message, intent):
+            if not self._is_rag_scope_query(normalized_message):
+                return self._handle_out_of_scope_general()
+
             return self._handle_general_question("general_question", message)
 
         try:
@@ -176,6 +189,120 @@ class ChatService:
                 for pattern in information_patterns
             )
         )
+
+    def _infer_action_intent_from_message(self, normalized_message: str) -> str | None:
+        if self._is_information_question(normalized_message):
+            return None
+
+        action_starters = (
+            "je veux",
+            "je souhaite",
+            "j'aimerais",
+            "jaimerais",
+            "peux tu",
+            "pouvez vous",
+            "merci de",
+        )
+
+        imperative_actions = (
+            "bloque",
+            "bloquer",
+            "debloque",
+            "debloquer",
+            "commande",
+            "commander",
+            "demande",
+            "demander",
+            "prepare",
+            "preparer",
+            "effectue",
+            "effectuer",
+            "fais",
+            "faire",
+        )
+
+        looks_like_action = (
+            any(normalized_message.startswith(starter) for starter in action_starters)
+            or any(word in normalized_message for word in imperative_actions)
+        )
+
+        if not looks_like_action:
+            return None
+
+        if (
+            "bloquer" in normalized_message
+            or "bloque" in normalized_message
+            or "opposition" in normalized_message
+        ) and "carte" in normalized_message:
+            return "block_card"
+
+        if "chequier" in normalized_message:
+            return "request_checkbook"
+
+        if "document" in normalized_message or "releve" in normalized_message:
+            return "request_document"
+
+        if "virement" in normalized_message:
+            return "prepare_transfer"
+
+        return None
+
+    def _is_rag_scope_query(self, normalized_message: str) -> bool:
+        banking_keywords = {
+            "amenet",
+            "amen bank",
+            "banque",
+            "bancaire",
+            "compte",
+            "solde",
+            "mouvement",
+            "mouvements",
+            "transaction",
+            "transactions",
+            "virement",
+            "beneficiaire",
+            "beneficiaire",
+            "carte",
+            "opposition",
+            "bloquer",
+            "deblocage",
+            "debloquer",
+            "chequier",
+            "document",
+            "releve",
+            "credit",
+            "simulation",
+            "agence",
+            "support",
+            "messagerie",
+            "budget",
+            "tpe",
+            "cfonb",
+            "sicav",
+            "change",
+            "recharge",
+            "prepayee",
+            "confirmation",
+            "actions sensibles",
+            "operation",
+            "operations",
+        }
+
+        return any(keyword in normalized_message for keyword in banking_keywords)
+
+    def _handle_out_of_scope_general(self) -> dict[str, Any]:
+        return {
+            "message": (
+                "Je suis conçu pour répondre uniquement aux questions liées au prototype "
+                "AMENet, aux services bancaires simulés et à la base documentaire du projet. "
+                "Je ne peux donc pas répondre à cette question générale."
+            ),
+            "intent": "out_of_scope",
+            "requires_confirmation": False,
+            "data": {},
+            "sources": [],
+            "error": None,
+        }
 
     def _store_pending_action(
         self,
@@ -560,8 +687,18 @@ class ChatService:
         if not relevant_results:
             return self._fallback_general_question(intent=intent)
 
+        ollama_answer = self.ollama_answerer.generate_answer(
+            query=original_message,
+            results=relevant_results,
+        )
+
+        message = ollama_answer or self._build_rag_message(
+            relevant_results,
+            original_message,
+        )
+
         return {
-            "message": self._build_rag_message(relevant_results, original_message),
+            "message": message,
             "intent": intent,
             "requires_confirmation": False,
             "data": {
@@ -608,120 +745,70 @@ class ChatService:
             )
 
         main_result = results[0]
-        answer = self._build_natural_rag_answer(
+        return self._build_clean_fallback_answer(
             main_result=main_result,
             original_message=original_message,
         )
 
-        complementary_points = self._build_complementary_points(results[1:3])
-
-        if complementary_points:
-            answer += "\n\nÀ retenir également :\n" + complementary_points
-
-        return answer
-
-    def _build_natural_rag_answer(self, main_result: Any, original_message: str) -> str:
+    def _build_clean_fallback_answer(self, main_result: Any, original_message: str) -> str:
         title = (main_result.title or "").lower()
-        text = main_result.text or ""
+        query = self._normalize(original_message)
 
-        if "opposition" in title and "carte" in title:
+        if "opposition" in query and "carte" in query:
             return (
-                "Pour faire opposition à une carte, le chatbot doit d'abord identifier "
-                "la carte concernée. Pour des raisons de sécurité, il n'affiche que les "
-                "cartes masquées, par exemple avec les derniers chiffres visibles. "
-                "Une fois la carte choisie, il demande une confirmation explicite avant "
-                "d'enregistrer la demande d'opposition dans l'environnement de simulation."
+                "Pour faire opposition à une carte dans le prototype, le chatbot identifie "
+                "d'abord la carte concernée en affichant uniquement des cartes masquées, "
+                "par exemple avec les derniers chiffres visibles. Une fois la carte choisie, "
+                "il demande une confirmation explicite avant d'enregistrer la demande "
+                "d'opposition dans l'environnement de simulation. Aucune opération bancaire "
+                "réelle n'est exécutée."
             )
 
-        if "chéquier" in title or "chequier" in title:
+        if "chequier" in query or "chéquier" in original_message.lower():
             return (
-                "Pour commander un chéquier, le chatbot identifie le compte concerné, "
-                "prépare une demande de chéquier et demande une confirmation explicite "
-                "avant d'enregistrer la demande dans l'environnement de simulation."
+                "Pour commander un chéquier dans le prototype, le chatbot identifie le compte "
+                "concerné, prépare une demande de chéquier puis demande une confirmation "
+                "explicite avant d'enregistrer la demande dans l'environnement de simulation."
             )
 
-        if "document" in title or "relevé" in title or "releve" in title:
+        if "releve" in query or "document" in query:
             return (
                 "Pour demander un document bancaire, le chatbot identifie le compte concerné "
-                "et le type de document demandé, par exemple un relevé de compte. "
-                "La demande est ensuite soumise à confirmation avant d'être enregistrée "
-                "dans l'environnement de simulation."
+                "et le type de document demandé, par exemple un relevé de compte. La demande "
+                "est ensuite soumise à confirmation avant d'être enregistrée dans "
+                "l'environnement de simulation."
             )
 
-        if "virement" in title:
+        if "virement" in query:
             return (
-                "Pour préparer un virement, le chatbot doit identifier le compte source, "
-                "le montant, la devise et le bénéficiaire. Comme il s'agit d'une action "
-                "sensible, le virement n'est jamais enregistré directement : une confirmation "
-                "explicite de l'utilisateur est obligatoire."
+                "Pour préparer un virement, le chatbot identifie le compte source, le montant "
+                "et le bénéficiaire. Comme il s'agit d'une action sensible, le virement n'est "
+                "pas enregistré directement : une confirmation explicite de l'utilisateur est "
+                "nécessaire avant l'enregistrement dans l'environnement de simulation."
             )
 
-        if "confirmation" in title or "actions sensibles" in title:
+        if "confirmation" in query or "actions sensibles" in query:
             return (
-                "Les opérations sensibles, comme les virements, l'opposition sur carte, "
-                "les demandes de documents ou les commandes de chéquier, doivent toujours "
-                "être confirmées explicitement par l'utilisateur avant d'être enregistrées "
-                "dans l'environnement de simulation."
+                "Dans le prototype, les actions sensibles comme les virements, l'opposition "
+                "sur carte, les demandes de documents ou les commandes de chéquier nécessitent "
+                "toujours une confirmation explicite. Le chatbot reformule l'action avant de "
+                "l'enregistrer dans l'environnement de simulation."
             )
 
-        if "service" in title or "périmètre" in title or "perimetre" in title:
+        if "services" in query or "disponibles" in query:
             return (
                 "Le prototype couvre plusieurs services AMENet : consultation du solde, "
                 "affichage des mouvements, préparation de virements, opposition sur carte, "
                 "demande de chéquier, demande de document, simulation de crédit et messagerie. "
-                "Les opérations restent simulées et ne sont pas connectées à un système bancaire réel."
+                "Toutes les opérations restent simulées."
             )
 
-        dialogue_answer = self._answer_from_dialogue_example(text)
-
-        if dialogue_answer:
-            return dialogue_answer
-
-        excerpt = self._clean_rag_excerpt(text, max_length=650)
+        excerpt = self._clean_rag_excerpt(main_result.text or "", max_length=650)
 
         return (
-            "D'après la base documentaire du prototype, voici l'information pertinente :\n\n"
+            "D'après la base documentaire du prototype, voici l'information principale :\n\n"
             f"{excerpt}"
         )
-
-    def _answer_from_dialogue_example(self, text: str) -> str | None:
-        if "Utilisateur :" not in text or "Chatbot :" not in text:
-            return None
-
-        assistant_parts = []
-        fragments = text.split("Chatbot :")[1:]
-
-        for fragment in fragments:
-            assistant_text = fragment.split("Utilisateur :", 1)[0].strip()
-            assistant_text = self._truncate_text(assistant_text, max_length=220)
-
-            if assistant_text:
-                assistant_parts.append(assistant_text)
-
-        if not assistant_parts:
-            return None
-
-        lines = [
-            "Dans le prototype, le parcours prévu est le suivant :"
-        ]
-
-        for part in assistant_parts[:3]:
-            lines.append(f"- {part}")
-
-        return "\n".join(lines)
-
-    def _build_complementary_points(self, results: list[Any]) -> str:
-        points = []
-
-        for result in results:
-            title = result.title or "Source complémentaire"
-            excerpt = self._clean_rag_excerpt(
-                result.text or "",
-                max_length=220,
-            )
-            points.append(f"- **{title}** : {excerpt}")
-
-        return "\n".join(points)
 
     def _clean_rag_excerpt(self, text: str, max_length: int = 700) -> str:
         cleaned = text.strip()
