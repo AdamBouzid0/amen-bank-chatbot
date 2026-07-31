@@ -1,1 +1,93 @@
-[]
+[
+  {
+    "question": "Comment faire opposition à une carte ?",
+    "expected_topics": [
+      "opposition carte",
+      "carte masquée",
+      "confirmation explicite",
+      "environnement de simulation"
+    ]
+  },
+  {
+    "question": "Comment commander un chéquier ?",
+    "expected_topics": [
+      "demande de chéquier",
+      "compte concerné",
+      "confirmation"
+    ]
+  },
+  {
+    "question": "Comment demander un relevé de compte ?",
+    "expected_topics": [
+      "demande de document",
+      "relevé de compte",
+      "confirmation"
+    ]
+  },
+  {
+    "question": "Comment faire un virement ?",
+    "expected_topics": [
+      "virement",
+      "montant",
+      "compte source",
+      "bénéficiaire",
+      "confirmation"
+    ]
+  },
+  {
+    "question": "Quels services sont disponibles sur AMENet ?",
+    "expected_topics": [
+      "consultation des comptes",
+      "mouvements",
+      "virements",
+      "cartes",
+      "documents",
+      "messagerie"
+    ]
+  },
+  {
+    "question": "Comment consulter mes mouvements bancaires ?",
+    "expected_topics": [
+      "mouvements",
+      "transactions",
+      "compte",
+      "historique"
+    ]
+  },
+  {
+    "question": "Quelles actions nécessitent une confirmation ?",
+    "expected_topics": [
+      "virement",
+      "opposition carte",
+      "demande de chéquier",
+      "demande de document",
+      "confirmation explicite"
+    ]
+  },
+  {
+    "question": "Quelle est la différence entre une question informationnelle et une action bancaire ?",
+    "expected_topics": [
+      "demande informationnelle",
+      "action sensible",
+      "confirmation",
+      "séparation information action"
+    ]
+  },
+  {
+    "question": "Comment contacter le support AMENet ?",
+    "expected_topics": [
+      "support",
+      "messagerie",
+      "assistance"
+    ]
+  },
+  {
+    "question": "Comment simuler un crédit ?",
+    "expected_topics": [
+      "simulation crédit",
+      "montant",
+      "durée",
+      "mensualité estimée"
+    ]
+  }
+]
