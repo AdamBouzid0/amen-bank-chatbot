@@ -561,7 +561,7 @@ class ChatService:
             return self._fallback_general_question(intent=intent)
 
         return {
-            "message": self._build_rag_message(relevant_results),
+            "message": self._build_rag_message(relevant_results, original_message),
             "intent": intent,
             "requires_confirmation": False,
             "data": {
@@ -600,42 +600,134 @@ class ChatService:
             "error": error,
         }
 
-    def _build_rag_message(self, results: list[Any]) -> str:
+    def _build_rag_message(self, results: list[Any], original_message: str) -> str:
         if not results:
             return (
                 "Je n'ai pas trouvé d'information suffisamment pertinente "
-                "dans la base documentaire."
+                "dans la base documentaire du prototype."
             )
 
         main_result = results[0]
-        main_excerpt = self._clean_rag_excerpt(main_result.text)
+        answer = self._build_natural_rag_answer(
+            main_result=main_result,
+            original_message=original_message,
+        )
+
+        complementary_points = self._build_complementary_points(results[1:3])
+
+        if complementary_points:
+            answer += "\n\nÀ retenir également :\n" + complementary_points
+
+        return answer
+
+    def _build_natural_rag_answer(self, main_result: Any, original_message: str) -> str:
+        title = (main_result.title or "").lower()
+        text = main_result.text or ""
+
+        if "opposition" in title and "carte" in title:
+            return (
+                "Pour faire opposition à une carte, le chatbot doit d'abord identifier "
+                "la carte concernée. Pour des raisons de sécurité, il n'affiche que les "
+                "cartes masquées, par exemple avec les derniers chiffres visibles. "
+                "Une fois la carte choisie, il demande une confirmation explicite avant "
+                "d'enregistrer la demande d'opposition dans l'environnement de simulation."
+            )
+
+        if "chéquier" in title or "chequier" in title:
+            return (
+                "Pour commander un chéquier, le chatbot identifie le compte concerné, "
+                "prépare une demande de chéquier et demande une confirmation explicite "
+                "avant d'enregistrer la demande dans l'environnement de simulation."
+            )
+
+        if "document" in title or "relevé" in title or "releve" in title:
+            return (
+                "Pour demander un document bancaire, le chatbot identifie le compte concerné "
+                "et le type de document demandé, par exemple un relevé de compte. "
+                "La demande est ensuite soumise à confirmation avant d'être enregistrée "
+                "dans l'environnement de simulation."
+            )
+
+        if "virement" in title:
+            return (
+                "Pour préparer un virement, le chatbot doit identifier le compte source, "
+                "le montant, la devise et le bénéficiaire. Comme il s'agit d'une action "
+                "sensible, le virement n'est jamais enregistré directement : une confirmation "
+                "explicite de l'utilisateur est obligatoire."
+            )
+
+        if "confirmation" in title or "actions sensibles" in title:
+            return (
+                "Les opérations sensibles, comme les virements, l'opposition sur carte, "
+                "les demandes de documents ou les commandes de chéquier, doivent toujours "
+                "être confirmées explicitement par l'utilisateur avant d'être enregistrées "
+                "dans l'environnement de simulation."
+            )
+
+        if "service" in title or "périmètre" in title or "perimetre" in title:
+            return (
+                "Le prototype couvre plusieurs services AMENet : consultation du solde, "
+                "affichage des mouvements, préparation de virements, opposition sur carte, "
+                "demande de chéquier, demande de document, simulation de crédit et messagerie. "
+                "Les opérations restent simulées et ne sont pas connectées à un système bancaire réel."
+            )
+
+        dialogue_answer = self._answer_from_dialogue_example(text)
+
+        if dialogue_answer:
+            return dialogue_answer
+
+        excerpt = self._clean_rag_excerpt(text, max_length=650)
+
+        return (
+            "D'après la base documentaire du prototype, voici l'information pertinente :\n\n"
+            f"{excerpt}"
+        )
+
+    def _answer_from_dialogue_example(self, text: str) -> str | None:
+        if "Utilisateur :" not in text or "Chatbot :" not in text:
+            return None
+
+        assistant_parts = []
+        fragments = text.split("Chatbot :")[1:]
+
+        for fragment in fragments:
+            assistant_text = fragment.split("Utilisateur :", 1)[0].strip()
+            assistant_text = self._truncate_text(assistant_text, max_length=220)
+
+            if assistant_text:
+                assistant_parts.append(assistant_text)
+
+        if not assistant_parts:
+            return None
 
         lines = [
-            "D'après la base documentaire du prototype :",
-            "",
-            main_excerpt,
+            "Dans le prototype, le parcours prévu est le suivant :"
         ]
 
-        complementary_results = results[1:3]
-
-        if complementary_results:
-            lines.append("")
-            lines.append("Informations complémentaires retrouvées :")
-
-            for result in complementary_results:
-                excerpt = self._clean_rag_excerpt(
-                    result.text,
-                    max_length=280,
-                )
-                lines.append(f"- **{result.title}** : {excerpt}")
+        for part in assistant_parts[:3]:
+            lines.append(f"- {part}")
 
         return "\n".join(lines)
+
+    def _build_complementary_points(self, results: list[Any]) -> str:
+        points = []
+
+        for result in results:
+            title = result.title or "Source complémentaire"
+            excerpt = self._clean_rag_excerpt(
+                result.text or "",
+                max_length=220,
+            )
+            points.append(f"- **{title}** : {excerpt}")
+
+        return "\n".join(points)
 
     def _clean_rag_excerpt(self, text: str, max_length: int = 700) -> str:
         cleaned = text.strip()
 
-        cleaned = cleaned.replace("Utilisateur :", "\nUtilisateur :")
-        cleaned = cleaned.replace("Chatbot :", "\nChatbot :")
+        cleaned = cleaned.replace("Utilisateur :", "")
+        cleaned = cleaned.replace("Chatbot :", "")
 
         lines = [
             line.strip()
