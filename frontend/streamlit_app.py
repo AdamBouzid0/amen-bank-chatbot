@@ -6,6 +6,7 @@ import streamlit as st
 
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
+CHAT_API_TIMEOUT = int(os.getenv("CHAT_API_TIMEOUT", "60"))
 
 
 st.set_page_config(
@@ -46,7 +47,7 @@ def call_chat_api(message: str, client_id: str) -> dict[str, Any]:
                 "message": message,
                 "client_id": client_id,
             },
-            timeout=10,
+            timeout=CHAT_API_TIMEOUT,
         )
         response.raise_for_status()
         return response.json()
@@ -66,7 +67,7 @@ def call_chat_api(message: str, client_id: str) -> dict[str, Any]:
 
     except requests.exceptions.Timeout:
         return {
-            "message": "Le backend met trop de temps à répondre.",
+            "message": "Le backend met trop de temps à répondre. Le premier appel RAG peut être plus long car le modèle d’embeddings se charge en mémoire.",
             "intent": "timeout",
             "requires_confirmation": False,
             "data": {},
@@ -157,6 +158,9 @@ def display_sidebar() -> None:
         "Je veux commander un chéquier",
         "Je veux demander un relevé",
         "Simule un crédit de 20000 DT sur 5 ans",
+        "Comment faire opposition à une carte ?",
+        "Quels services sont disponibles sur AMENet ?",
+        "Quelles actions nécessitent une confirmation ?",
         "Je n'arrive pas à me connecter à AMENet",
     ]
 
@@ -174,12 +178,47 @@ def display_sidebar() -> None:
     st.sidebar.caption(f"API : {API_BASE_URL}")
 
 
+def display_rag_sources(sources: list[dict[str, Any]]) -> None:
+    if not sources:
+        return
+
+    with st.expander("Sources documentaires utilisées", expanded=True):
+        for index, source in enumerate(sources, start=1):
+            title = source.get("title", "Source sans titre")
+            source_file = source.get("source_file")
+            source_image = source.get("source_image")
+            page = source.get("page")
+            score = source.get("score")
+
+            st.markdown(f"**{index}. {title}**")
+
+            details = []
+
+            if source_file:
+                details.append(f"Fichier : `{source_file}`")
+
+            if page is not None:
+                details.append(f"Page : `{page}`")
+
+            if source_image:
+                details.append(f"Capture : `{source_image}`")
+
+            if score is not None:
+                details.append(f"Score : `{score:.3f}`")
+
+            if details:
+                st.caption(" • ".join(details))
+
+
 def display_metadata(metadata: dict[str, Any]) -> None:
     intent = metadata.get("intent")
     requires_confirmation = metadata.get("requires_confirmation")
     error = metadata.get("error")
     data = metadata.get("data")
     pending_action = metadata.get("pending_action")
+    sources = metadata.get("sources") or []
+
+    display_rag_sources(sources)
 
     if requires_confirmation:
         st.warning("Cette action nécessite une confirmation explicite.")
@@ -239,8 +278,8 @@ def display_messages() -> None:
 def display_header() -> None:
     st.title("Chatbot assistant bancaire AMENet")
     st.caption(
-        "Prototype de stage basé sur des données fictives, une API bancaire simulée "
-        "et un routeur d'intention par règles."
+        "Prototype de stage basé sur des données fictives, une API bancaire simulée, "
+        "un routeur d'intention et un module RAG documentaire."
     )
 
     st.info(

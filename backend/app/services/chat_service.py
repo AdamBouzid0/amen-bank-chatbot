@@ -601,30 +601,52 @@ class ChatService:
         }
 
     def _build_rag_message(self, results: list[Any]) -> str:
-        lines = [
-            "Voici les informations trouvées dans la base documentaire :"
-        ]
-
-        for index, result in enumerate(results, start=1):
-            excerpt = self._truncate_text(result.text, max_length=900)
-            lines.append(
-                f"\n{index}. **{result.title}**\n{excerpt}"
+        if not results:
+            return (
+                "Je n'ai pas trouvé d'information suffisamment pertinente "
+                "dans la base documentaire."
             )
 
-        lines.append("\nSources :")
+        main_result = results[0]
+        main_excerpt = self._clean_rag_excerpt(main_result.text)
 
-        for result in results:
-            source = result.source_file
+        lines = [
+            "D'après la base documentaire du prototype :",
+            "",
+            main_excerpt,
+        ]
 
-            if result.page is not None:
-                source = f"{source}, page {result.page}"
+        complementary_results = results[1:3]
 
-            if result.source_image:
-                source = f"{source} ; capture : {result.source_image}"
+        if complementary_results:
+            lines.append("")
+            lines.append("Informations complémentaires retrouvées :")
 
-            lines.append(f"- {result.title} — {source}")
+            for result in complementary_results:
+                excerpt = self._clean_rag_excerpt(
+                    result.text,
+                    max_length=280,
+                )
+                lines.append(f"- **{result.title}** : {excerpt}")
 
         return "\n".join(lines)
+
+    def _clean_rag_excerpt(self, text: str, max_length: int = 700) -> str:
+        cleaned = text.strip()
+
+        cleaned = cleaned.replace("Utilisateur :", "\nUtilisateur :")
+        cleaned = cleaned.replace("Chatbot :", "\nChatbot :")
+
+        lines = [
+            line.strip()
+            for line in cleaned.splitlines()
+            if line.strip()
+        ]
+
+        cleaned = " ".join(lines)
+        cleaned = self._truncate_text(cleaned, max_length=max_length)
+
+        return cleaned
 
     def _format_rag_source(self, result: Any) -> dict[str, Any]:
         return {
