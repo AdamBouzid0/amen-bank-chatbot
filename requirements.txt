@@ -13,3 +13,4 @@ langchain-community
 httpx
 pymupdf
 sentence-transformers
+tabulate
